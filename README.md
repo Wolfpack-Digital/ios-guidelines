@@ -449,4 +449,3 @@ Comment them if you might need them later or they’re complex, but never leave 
 This is a very important guideline - it’s what marks a junor from an intermediate/senior developer.
 
 Do not write the same logic twice - if you find yourself copy pasting things within the same project - ask yourself: can I move this in another class so that I can reuse it anywhere I need it?
-
