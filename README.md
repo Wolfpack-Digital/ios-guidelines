@@ -2,7 +2,7 @@
 Guidelines on how we write and structure iOS projects at Wolfpack-Digital
 
 
-1. Structure of the project folders. The structure follows some rules: high level code top -> low level code bottom. If the layer is the same, use user flow order, if user flow doesn't matter, use alpanumeric ordering.
+1. Structure of the project folders. The structure follows some rules: high level code top -> low level code bottom. If the layer is the same, use user flow order, if user flow doesn't matter, use alpanumeric ordering. Use the example bellow as a starting point.
     e.g.:
     - `App` - for AppDelegate, extensions of AppDelegate and global clases that are supposed to be used at entry level of the app
     - `Navigation` - for coordinators and other logic related to navigation (e.g. deeplinks)
