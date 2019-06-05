@@ -13,8 +13,9 @@ Guidelines on how we write and structure iOS projects at Wolfpack-Digital
                 - `...`
             - `Login`
                 - `LoginViewController`
-                    - `LoginViewController.xib`
+                    - `LoginViewController.xib` - `.xib` file above its counterpart `.swift` file
                     - `LoginViewController.swift`
+                    - `LoginViewModel.swift` - viewModel bellow the view controller
                 - `Cells` - cells used only for the login screen
             - `Signup`
                 - `...`
