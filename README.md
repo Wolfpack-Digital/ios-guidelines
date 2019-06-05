@@ -2,13 +2,33 @@
 Guidelines on how we write and structure iOS projects at Wolfpack-Digital
 
 
-1. Structure of the project folders
-    1. AppDelegate - for AppDelegate.swift and extensions of AppDelegate
-    2. ViewControllers - for view controllers and extensions of view controllers (tableview cells can go in here as well)
-    3. Models - for models
-    4. Lib - for backend logic
-    5. Extensions - for extensions of external classes - if you for example extend a view controller of your own, put it in the ViewControllers
-    6. SupportingFiles - for Info.plist and other files
+1. Structure of the project folders. The structure follows some rules: high level code top -> low level code bottom. If the layer is the same, use user flow order, if user flow doesn't matter, use alpanumeric ordering.
+    e.g.:
+    - `App` - for AppDelegate, extensions of AppDelegate and global clases that are supposed to be used at entry level of the app
+    - `Navigation` - for coordinators and other logic related to navigation (e.g. deeplinks)
+    - `Presentation` - for view controllers and extensions of view controllers
+        - `Launch` - for launch and app start loading UI
+        - `Authentification` - Login, Signup related UI
+            - `Welcome`
+                - `...`
+            - `Login`
+                - `LoginViewController`
+                    - `LoginViewController.xib`
+                    - `LoginViewController.swift`
+                - `Cells` - cells used only for the login screen
+            - `Signup`
+                - `...`
+        - `Main` - main screens of the app. Add more levels of subgroupping if needed.
+        - `Cells` - cells supposed to be used throughout the app
+        - `Views` - custom views that are used throughout the app
+    - `Models` - business layer models
+    - `Networking` - helpers for managing API requests
+    - `Resources` - assets, colors, plists, fonts, etc.
+    - `Utilities`
+        - `Error`
+        - `Extensions`
+        - `Session`
+        - `...`
     
     
 
