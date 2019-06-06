@@ -24,7 +24,7 @@ Guidelines on how we write and structure iOS projects at Wolfpack-Digital
         - `Cells` - cells supposed to be used throughout the app
         - `Views` - custom views that are used throughout the app
     - `Networking` - helpers for managing API requests. Group APIs in separate files
-        - `Models` - business layer models
+        - `Models` - network layer models
     - `Resources` - assets, colors, plists, fonts, etc.
     - `Utilities`
         - `Error`
