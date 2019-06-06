@@ -6,6 +6,7 @@ Guidelines on how we write and structure iOS projects at Wolfpack-Digital
     e.g.:
     - `App` - for AppDelegate, extensions of AppDelegate and global clases that are supposed to be used at entry level of the app
     - `Navigation` - for coordinators and other logic related to navigation (e.g. deeplinks)
+    - `Storyboards` - group each flow in his own storyboard. Avoid using segues as they are hard to be reused
     - `Presentation` - for view controllers and extensions of view controllers
         - `Launch` - for launch and app start loading UI
         - `Authentification` - Login, Signup related UI
@@ -22,8 +23,8 @@ Guidelines on how we write and structure iOS projects at Wolfpack-Digital
         - `Main` - main screens of the app. Add more levels of subgroupping if needed.
         - `Cells` - cells supposed to be used throughout the app
         - `Views` - custom views that are used throughout the app
-    - `Models` - business layer models
-    - `Networking` - helpers for managing API requests
+    - `Networking` - helpers for managing API requests. Group APIs in separate files
+        - `Models` - business layer models
     - `Resources` - assets, colors, plists, fonts, etc.
     - `Utilities`
         - `Error`
