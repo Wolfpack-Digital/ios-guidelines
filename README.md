@@ -172,283 +172,114 @@ Example:
     }
 
 
-9. When fetching data from an API use the APIClient - Factory - Model convention
+9. API Client Structure
 
-Example (read comments as well):
-
-    //APIClient - used for fetching the raw info from the API
-    class APIClient {
-        class func getRequests(completion: @escaping (_ requests: [Request]) -> ()) {
-            get(path: "requests") { json in
-                if let jsonArray = json as? [[String: AnyObject]] {   
-                    //Passes the info to the Factory and expects it modeled
-                    let requests = Factory.requestsFromJsonArray(jsonArray: jsonArray)
-                    completion(requests)
-                }
-            }
-        }
-    }
-    
-    //Works like a classic factory: raw material goes in -> processed material comes out
-    class Factory {
-        class func requestsFromJsonArray(jsonArray: [[String: AnyObject]]) -> [Request] {
-            var requests = [Request]()
-            for json in jsonArray {
-                requests += [requestFromJson(json: json)]
-            }
-            
-            return requests
-        }
-        
-        class func requestFromJson(json: [String: AnyObject]) -> Request {
-            let dateFormatter = DateFormatter()
-            dateFormatter.timeZone = TimeZone(identifier: "UTC")
-            dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
-            
-            var departureDate, arrivalDate, createdAt: Date?
-            
-            if let departureDateString = json["departure_date"] as? String {
-                departureDate = dateFormatter.date(from: departureDateString)
-            }
-            
-            if let arrivalDateString = json["arrival_date"] as? String {
-                arrivalDate = dateFormatter.date(from: arrivalDateString)
-            }
-            
-            if let createdAtString = json["created_at"] as? String {
-                createdAt = dateFormatter.date(from: createdAtString)
-            }
-            
-            return Request(
-                isPlanned: json["is_planned"] as? Bool,
-                departureStation: json["departure_station"] as? String,
-                arrivalStation: json["arrival_station"] as? String,
-                departureTime: departureDate,
-                arrivalTime: arrivalDate,
-                state: RequestState(rawValue: json["state"] as! String),
-                assistanceTypes: json["assistance_types"] as? [String],
-                createdAt: createdAt
-            )
-        }
-    }
-    
-    //Model: used for passing around information.
-    enum RequestState : String {
-        case pending = "pending"
-        case assistantOnTheWay = "assistant_on_the_way"
-        case attended = "attended"
-        case confirmed = "confirmed"
-    }
-    
-    class Request: NSObject {
-        var isPlanned: Bool?
-        var state: RequestState?
-        var assistanceTypes: [String]?
-        var departureStation: String?
-        var arrivalStation: String?
-        var departureTime: Date?
-        var arrivalTime: Date?
-        var message: String?
-        var createdAt: Date?
-        
-        init(
-            isPlanned: Bool?,
-            departureStation: String?,
-            arrivalStation: String?,
-            departureTime: Date?,
-            arrivalTime: Date?,
-            state: RequestState?,
-            assistanceTypes: [String]?,
-            createdAt: Date?
-        ) {
-            self.isPlanned = isPlanned
-            self.departureStation = departureStation
-            self.arrivalStation = arrivalStation
-            self.departureTime = departureTime
-            self.arrivalTime = arrivalTime
-            self.state = state
-            self.assistanceTypes = assistanceTypes
-            self.createdAt = createdAt
-        }
-    }
-
-
-
-10. Split APIClient into multiple extensions based on the model
+Api Client Configuration
+     - Generic protocol implemented by the ApiRouter enum 
 
 Example:
 
-The main APIClient class - only contains helper methods, works like a wrapper for Alamofire in this case:
+protocol APIConfiguration: URLRequestConvertible {
+    var baseUrl: String { get }
+    var method: HTTPMethod { get }
+    var path: String { get }
+    var headers: [String: String] { get }
+    var parameters: Parameters? { get }
+   
+}
 
-    class APIClient {
-        
-        static func get(path: String, params: [String: Any]?=nil, completion: @escaping (_ json: Any?) -> ()) {
-            performRequest(path: path, method: .get, params: params, completion: completion)
-        }
-        
-        static func post(path: String, params: [String: Any]?=nil, completion: @escaping (_ json: Any?) -> ()) {
-            performRequest(path: path, method: .post, params: params, completion: completion)
-        }
-        
-        static func patch(path: String, params: [String: Any]?=nil, completion: @escaping (_ json: Any?) -> ()) {
-            performRequest(path: path, method: .patch, params: params, completion: completion)
-        }
-        
-        // Private
-        
-        private static func performRequest(path: String, method: HTTPMethod, params: [String: Any]?, completion: @escaping (_ json: Any?) -> ()) {
-            var requestParams = [String: Any]()
-            
-            if let p = params {
-                requestParams = p
-            }
-            
-            if let deviceToken = SessionManager.deviceToken() {
-                requestParams["device_token"] = deviceToken
-            }
-    
-            Alamofire.request(urlWithPath(path), method: method, parameters: requestParams).validate().responseJSON {
-                response in
-                
-                completion(response.result.value)
-            }
-        }
-        
-        private static func urlWithPath(_ string: String) -> String {
-            var baseUrl: String!
-            
-            switch serverEnv() {
-            case .staging:
-                baseUrl = stagingUrl()
-            case .local:
-                baseUrl = localUrl()
-            case .production:
-                baseUrl = productionUrl()
-            }
-            
-            return baseUrl + string
-        }
-        
-        private enum ServerEnv {
-            case staging
-            case production
-            case local
-        }
-        
-        private static func serverEnv() -> ServerEnv {
-            return .staging
-        }
-        
-        private static func stagingUrl() -> String {
-            return "https://myawesomeapi.com/api/v1/"
-        }
-        
-        private static func localUrl() -> String {
-            return "http://192.168.0.41.xip.io/api/v1/"
-        }
-        
-        private static func productionUrl() -> String {
-            return "https://myawesomeproductionapi/api/v1/"
+APIRouter 
+
+- Enum that defines the  route, HTTP method, parameters and headers for each api call
+
+Example:
+
+enum APIRouter: APIConfiguration {
+
+    case register(request: RegisterRequest)
+
+    var baseUrl: TargetConfig.baseUrl
+
+    method: HTTPMethod {
+        switch self {
+            case .register: return .post
         }
     }
 
-Extension for Profile API calls:
-
-    //APIClientProfile.swift
-    
-    extension APIClient {
-        
-        static func createProfile(profile: Profile, completion: @escaping (_ succeeded: Bool, _ profile: Profile?) -> ()) {
-            post(path: "profiles", params: profileParams(profile: profile)) { json in
-                if let profileJson = json as? [String : AnyObject] {
-                    let profile = Factory.profileFromJson(json: profileJson)
-                    completion(true, profile)
-                } else {
-                    completion(false, nil)
-                }
-            }
+    var path: String {
+        switch self {
+            case .register: “api/v1/register”
         }
-        
-        class func updateProfile(profile: Profile, completion: @escaping (_ succeeded: Bool, _ profile: Profile?) -> ()) {
-            post(path: "profiles/update_profile", params: profileParams(profile: profile)) { json in
-                if let profileJson = json as? [String : AnyObject] {
-                    let profile = Factory.profileFromJson(json: profileJson)
-                    completion(true, profile)
-                } else {
-                    completion(false, nil)
-                }
-            }
-        }
-        
-        class func getProfile(completion: @escaping (_ profile: Profile) -> ()) {
-            get(path: "profiles/\(SessionManager.deviceToken()!)") { json in
-                if let profileJson = json as? [String: AnyObject] {
-                    let profile = Factory.profileFromJson(json: profileJson)
-                    completion(profile)
-                }
-            }
-        }
-        
-        private class func profileParams(profile: Profile) -> [String : Any] {
-            var params = [
-                "device_token" : SessionManager.deviceToken()!
-            ] as [String : Any]
-            
-            if let assistanceTypes = profile.assistanceTypes {
-                params["profile[assistance_types]"] = assistanceTypes
-            }
-            
-            if let name = profile.name {
-                params["profile[name]"] = name
-            }
-            
-            if let phone = profile.phoneNumber {
-                params["profile[phone]"] = phone
-            }
-            
-            return params
-        }
-        
     }
 
-Extension for Devices API calls:
-
-
-    //APIClientDevices.swift
-    
-    extension APIClient {
-        
-        static func postDevice(_ completion: @escaping (_ deviceToken: String, _ succeeded: Bool) -> ()) {
-            post(path: "devices", params: ["device[os]": "iOS"]) { json in
-                if let jsonDict = json as? [String:AnyObject] {
-                    if jsonDict["token"] != nil {
-                        completion(jsonDict["token"] as! String, true)
-                    } else {
-                        completion("", false)
-                    }
-                } else {
-                    completion("", false)
-                }
-            }
-        }
-        
-        static func postPushNotificationsToken(devicePNToken: String, _ completion: @escaping (_ succeeded: Bool) -> ()) {
-            let params = [
-                "device[push_notification_token]": devicePNToken
-            ]
-            
-            patch(path: "devices/\(SessionManager.deviceToken()!)", params: params) { json in
-                if let jsonDict = json as? [String:AnyObject] {
-                    completion(jsonDict["push_notification_token"] != nil)
-                } else {
-                    completion(false)
-                }
-            }
-        }
-        
+    var headers : [String: String] {
+                var headers: [String: String] = [:]
+                headers[“Authorization”] = authToken
+        return headers
     }
 
-And so on … You get the point 😃 
+    var parameters: Parameters? {
+        switch self {
+            case .register(let request):
+                return request.params
+        }
+    }
+    
+    // the RegisterRequest model must implement the Encodable protocol
+
+}
+
+API Client
+- Generic protocol user for API request/response management
+- Wrapper for the Alamofire requests
+
+Example: 
+
+protocol APIClient : {
+
+        func performRequest<T: Decodable>(route: APIConfiguration, decoder: JSONDecoder,
+                                      completion: @escaping (APIResponse<T>) -> Void)
+         func performRequest(route: APIRouter, completion: @escaping (Bool, String?) -> Void)
+           func upload<T: Decodable>(route: APIRouter, decoder: JSONDecoder, completion: @escaping (APIResponse<T>) -> Void)
+}
+
+10. The API calls are performed by the Repository class that implements the APIClient protocol
+
+APIResponse
+- Generic response model used to encapsulate the request status and data
+- Expected by repositories
+
+struct APIResponse<DataModel> {
+    let success: Bool
+    let message: String?
+    let data: DataModel?
+    
+    static func success<DataModel>(_ data: DataModel?) -> APIResponse<DataModel> {
+        return APIResponse<DataModel>(success: true, message: nil, data: data)
+    }
+    
+    static func failure(_ message: String?, _ data: DataModel? = nil) -> APIResponse<DataModel> {
+        return APIResponse<DataModel>(success: false, message: message, data: data)
+    }
+    
+}
+
+Example of an API call performed in the Repository class :
+
+func createAccount(account: AccountData, _ completion: @escaping (APIResponse<UserProfile>) -> Void) {
+
+        performRequest(route: APIRouter.register(request: AccountRequest(account: account))) { [weak self] (response: APIResponse<UserResponse>) in
+            guard let `self` = self else { return }
+            if let data = response.data, response.success {
+                self.fetchCategoriesAndProductsIfNeeded {
+                    completion(APIResponse(success: true, message: nil, data: data.hairstylist))
+                }
+            } else {
+                completion(APIResponse(success: false, message: response.message, data: nil))
+            }
+        }
+    }
+
 
 11. Use SwiftLint to enforce stylies and conventions
 
